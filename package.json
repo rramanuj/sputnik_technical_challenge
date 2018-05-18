@@ -1,0 +1,28 @@
+{
+  "name": "node-token-jwt",
+  "main": "server.js",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "body-parser": "^1.18.2",
+    "chai": "^4.1.2",
+    "chai-http": "^4.0.0",
+    "cheerio": "^1.0.0-rc.2",
+    "cookie-parser": "^1.4.3",
+    "cookies": "^0.7.1",
+    "cors": "^2.8.4",
+    "express": "^4.16.3",
+    "google-tag-manager-detection": "^1.0.0",
+    "is-url": "^1.2.4",
+    "jsonwebtoken": "^8.2.1",
+    "mocha": "^5.1.1",
+    "mongoose": "^5.0.17",
+    "morgan": "^1.9.0",
+    "request": "^2.86.0",
+    "url": "^0.11.0",
+    "url-check": "0.0.1",
+    "vue": "^2.5.16"
+  },
+  "scripts": {
+    "test": "mocha"
+  }
+}
