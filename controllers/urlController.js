@@ -1,12 +1,25 @@
+// =======================
+// get packages  =========
+// =======================
 var express = require('express');
 var request = require('request');
 var URL = require('url');
-var cookieParser = require('cookie-parser')
 var cheerio = require('cheerio');
 var app = express();
 var jwt = require('jsonwebtoken'); // used to create, sign, and verify tokens
-var gtmd = require('google-tag-manager-detection')
+var gtmd = require('google-tag-manager-detection');
+
+// =======================
+// globals  ==============
+// =======================
+let badLink = 'The URL you provided does not lead anywhere :(.';
+let unformattedLink = 'URL must in following format: http://www.example.co.uk';
 const urlController = {}; //establish instance for export
+
+
+// =======================
+// functions  ============
+// =======================
 
 //function to validate a url
 function ValidURL(str) {
@@ -20,27 +33,35 @@ function ValidURL(str) {
 
 //uses npm library 'gtmd' to check if google analytics is running on the page
 urlController.checkForGA = function (req, res) {
-    //var url = req.protocol + '://' + req.get('host') + req.originalUrl;
-    var url = req.body.url;
-
+    var url = req.body.url
+    //ensure url is in the correct format
     if (ValidURL(url)) {
         request(url, function (error, response, body) {
             if (!error && response.statusCode == 200) {
-                gtmd.checkUrlForGtm(url, function (result) {
-                    res.json({
-                        "result": result
-                    });
+                //if we can fire a request to the url in question, it means the link is valid
+                gtmd.checkUrlForGaViaGtm(url, function (result) {
+                    //if the link contains google analytics
+                    if (result.has_ga) {
+                        res.json({
+                            "result": result.has_ga
+                            //return bool value of true
+                        })
+                    }
+                    else {
+                        res.json({ "result": false })
+                    }
                 })
             } else {
-                res.json({
-                    "result": "The link doesn't lead anywhere :("
+                //if we don't get 200 response from the link, they've wrote something dodgy
+                res.status(404).json({
+                    "result": badLink
                 });
             }
         })
     }
     else {
-        res.json({
-            "result": "URL must in following format: http://www.example.co.uk"
+        res.status(400).json({
+            "result": unformattedLink
         });
     }
 }
@@ -49,7 +70,7 @@ urlController.checkForGA = function (req, res) {
 urlController.title = function (req, res) {
     //  var url =  req.protocol + '://' + req.get('host') + req.originalUrl;
     var url = req.body.url;
-
+    //ensure url is in the correct format
     if (ValidURL(url)) {
         request(url, function (error, response, body) {
             if (!error && response.statusCode == 200) {
@@ -64,34 +85,32 @@ urlController.title = function (req, res) {
                 }
                 )
             } else {
-                res.json({
-                    "title": "The link doesn't lead anywhere :("
+                res.status(404).json({
+                    "title": badLink
                 });
             }
         })
     } else {
-        res.json({
-            "title": "URL must in following format: http://www.example.co.uk"
+        res.status(400).json({
+            "title": unformattedLink
         });
     }
 }
 
-// get links/domains
+// get links/unique domains
 urlController.scrape = function (req, res) {
     //url redirect
     var hyperlinks = [];
     var domains = [];
-    // var url =  req.protocol + '://' + req.get('host') + req.originalUrl;
     var url = req.body.url;
     var secured = false;
 
-    /*if (req.connection.encrypted) {
-                    secured = true;
-                } */
     if (ValidURL(url)) {
+        if (url.indexOf("https") == 0) {
+            secured = true;
+        }
         request(url, function (error, response, body) {
             if (!error && response.statusCode == 200) {
-
                 request(url, function (err, resp, body) {
                     $ = cheerio.load(body);   //cheerio allows us to scrape webpages, assign the $operator to do things with
                     allLinks = $('a'); //jquery get all hyperlinks
@@ -100,18 +119,15 @@ urlController.scrape = function (req, res) {
                         //URL library extracts domain from a given link
                         var domain = URL.parse(l).host;
                         hyperlinks.push(l); //push the original hyperlink into hyperlink array
-
                         if (domain != null) {
                             //if domain is actually a domain, store it in the domain array
                             domains.push(domain);
                         }
                     });
-
                     //stick a filter on the domain array to only display unique values
                     var unique = domains.filter(function (elem, index, self) {
                         return index === self.indexOf(elem);
                     })
-
                     //ta-da
                     res.json({
                         "links": hyperlinks.length,
@@ -120,18 +136,18 @@ urlController.scrape = function (req, res) {
                     });
                 });
             } else {
-                res.json({
-                    "links": "The link doesn't lead anywhere :(",
-                    "domains": "The link doesn't lead anywhere :(",
-                    "secure": "The link doesn't lead anywhere :("
+                res.status(404).json({
+                    "links": badLink,
+                    "domains": badLink,
+                    "secure": badLink
                 });
             }
         })
     } else {
-        res.json({
-            "links": "URL must in following format: http://www.example.co.uk",
-            "domains": "URL must in following format: http://www.example.co.uk",
-            "secure": "URL must in following format: http://www.example.co.uk"
+        res.status(400).json({
+            "links": unformattedLink,
+            "domains": unformattedLink,
+            "secure": unformattedLink
         });
     }
 };

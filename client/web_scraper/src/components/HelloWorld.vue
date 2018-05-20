@@ -1,21 +1,25 @@
 <template>
-  
 <v-layout column>
 
 <v-flex xs6 offset-xs3>
-      <h1>Web Scraper!</h1>
-    <h2>Get information about your websites!</h2>
-
+        <div class="white elevation-2">
+ <v-toolbar flat dense class ="cyan" light>
+      <v-toolbar-title>Web Scraper!</v-toolbar-title>
+    </v-toolbar>
+        </div>
+     </div>
         <v-flex>
-     
+          <!--v-models can be set to text boxes so it automatically populates the values with our data pull stuff -->
         <v-text-field v-model="url" box label="Enter your URL here"></v-text-field>
       </v-flex>
-        <v-btn @click="checkWebsite()"> 
+        <v-btn @click="pullData()"> 
     Check website
      </v-btn>
+</v-flex>
       <v-container fluid grid-list-xl>
+        <!--Vuetify makes the layout look gooood (relatively). -->
     <v-layout row wrap>
-      <v-flex xs12 class="my-3">
+      <v-flex xs6 offset-xs3>
         <v-card>
           <v-toolbar color="primary">
             <v-btn icon>
@@ -58,7 +62,6 @@
                   label="Is Google Analytics working on the webpage?:"
                 ></v-text-field>
               </v-flex>
-              
             </v-layout>
           </v-container>
         </v-card>
@@ -66,90 +69,80 @@
     </v-layout>
   </v-container>
 </v-flex>
-  <v-container fluid>
-
-      <v-flex xs2.2>
-        <v-text-field
-          id="testing"
-          v-model=links
-          name="input-1"
-          label="Number of Links"
-        ></v-text-field>
-      </v-flex>
-
-      <v-flex xs2.2>
-        <v-text-field
-          id="testing"
-          v-model=domains
-          name="input-1"
-          label="Number of Unique Domains"
-        ></v-text-field>
-      </v-flex>
-
-      <v-flex xs2.2>
-        <v-text-field
-          id="testing"
-          v-model=secure
-          name="input-1"
-          label="Is the website secure?"
-        ></v-text-field>
-      </v-flex>
-
-      <v-flex xs2.2>
-        <v-text-field
-          id="testing"
-          v-model=title
-          name="input-1"
-          label="Title of the webpage"
-        ></v-text-field>
-      </v-flex>
-
-      <v-flex xs2.2>
-        <v-text-field
-          id="testing"
-          v-model=GA
-          name="input-1"
-          label="Is the Google Analytics working on the page?"
-        ></v-text-field>
-      </v-flex>
-
-
-  </v-container>
-
- 
+  
 </v-layout>
 </template>
 
 <script>
 import UrlService from "@/services/UrlService";
-
+//Axiom does the heavy lifting for asynchronous requests, 
+//You could put the entire 'service' here, but I like to split these files up
+//to make the code look cleaner.
 export default {
   name: "HelloWorld",
   data() {
     return {
+      //establish the data members here, e.g. title. When we assign these guys to the textboxes they automatically
+      //get populated with the information when its pulled from our API
       links: "Empty :)",
       domains: "Empty :)",
       secure: "Empty :)",
       title: "Empty :)",
       GA: "Empty :)",
-      scrape: null
+      badLink: "The URL you provided does not lead anywhere :(.",
+      unformattedLink: "URL must in following format: http://www.example.co.uk"
     };
   },
   methods: {
-    navigateTo(link, board) {
-      this.$router.push(link);
+    pullData() {
+      this.getTitle();
+      this.scrape();
+      this.analytics();
     },
-    async checkWebsite(userId) {
-      //remove user
-      {
-        this.scrape = (await UrlService.scrape({ url: this.url })).data;
-        this.title = (await UrlService.title({ url: this.url })).data.title;
-        this.GA = (await UrlService.GA({ url: this.url})).data.result.has_ga;
-        console.log(this.GA);
-        this.links = this.scrape.links;
-        this.domains = this.scrape.domains;
-        this.secure = this.scrape.secure;
-      }
+    async getTitle() {
+      await UrlService.title({ url: this.url })
+        .then(response => (this.title = response.data.title))
+        .catch(err => {
+          if (err.response.status === 404) {
+            //by using the v-model, when we assign things directly to the variable, 
+            //it automatically populates the textboxes.
+            this.title = this.badLink;
+          } else if (err.response.status === 400) {
+            this.title = this.unformattedLink;
+          }
+        });
+    },
+    async scrape() {
+      await UrlService.scrape({ url: this.url })
+        .then(
+          response => (
+            (this.links = response.data.links),
+            (this.domains = response.data.domains),
+            (this.secure = response.data.secure)
+          )
+        )
+        .catch(err => {
+          if (err.response.status === 404) {
+            this.links = this.badLink;
+            this.domains = this.badLink;
+            this.secure = this.badLink;
+          } else if (err.response.status === 400) {
+            this.links = this.unformattedLink;
+            this.domains = this.unformattedLink;
+            this.secure = this.unformattedLink;
+          }
+        });
+    },
+    async analytics() {
+      await UrlService.GA({ url: this.url })
+        .then(response => (this.GA = response.data.result))
+        .catch(err => {
+          if (err.response.status === 404) {
+            this.GA = this.badLink;
+          } else if (err.response.status === 400) {
+            this.GA = this.unformattedLink;
+          }
+        });
     }
   }
 };

@@ -1,115 +1,185 @@
+// =======================
+// test dependencies =====
+// =======================*/
 var chai = require('chai');
 var chaiHttp = require('chai-http');
 var server = require('../server.js');
 var should = chai.should();
-
+var expect = chai.expect;
 chai.use(chaiHttp);
 
-//get links
-describe('scrape', function() {
-    it('should display the page title') , function(done){
+// =======================
+// test urls  ============
+// =======================*/
+let badLink = 'The URL you provided does not lead anywhere :(.'
+let unformattedLink = 'URL must in following format: http://www.example.co.uk'
+
+let secureUrl = {
+    'url': 'https://www.google.co.uk'
+}
+let unsecureUrl = {
+    'url': 'http://www.google.co.uk'
+}
+let unformattedUrl = {
+    'url': 'www.google.co.uk'
+}
+let badUrl = {
+    'url': 'http://localhost:1200/'
+}
+//random website that uses google analytics
+let googleAnalyticsUrl = {
+    'url': 'https://www.branded3.com/blog/track-internal-site-search-using-google-tag-manager/'
+}
+
+// =======================
+// scrape tests  =========
+// =======================*/
+//returns links, unique domains and website security
+describe('scrape', function () {
+    it('should list number of links on the page that the user can click on & unique domains', function (done) {
         chai.request(server)
-        .get('/api/scrape/www.google.co.uk')
-        .end(function(err, res){
-          res.should.be.json;
-          res.body.length.should.be.eql(0);
-          res.should.have.status(200);
-          done();
-        });
-    },
-    it('should list number of links on the page that the user can click on & unique domains', function(done) {
-        chai.request(server)
-          .get('/api/scrape/www.google.co.uk')
-          .end(function(err, res){
-            res.should.be.json;
-            res.body.length.should.be.eql(0);
-            res.should.have.status(200);
-            done();
-          });
-      });
-
-  it('Whether the page was served in a secure manner<id> PUT');
-  it('Was Google Analytics available and working on the page?');
-});
-
-/*
-  * Test the /POST route
-
- describe('/POST book', () => {
-    it('it should not POST a book without pages field', (done) => {
-      let book = {
-          title: "The Lord of the Rings",
-          author: "J.R.R. Tolkien",
-          year: 1954
-      }
-      chai.request(server)
-          .post('/book')
-          .send(book)
-          .end((err, res) => {
-              res.should.have.status(200);
-              res.body.should.be.a('object');
-              res.body.should.have.property('errors');
-              res.body.errors.should.have.property('pages');
-              res.body.errors.pages.should.have.property('kind').eql('required');
-            done();
-          });
-    });
-
-});
-}); */
-  /*
-  * Test the /POST route
-/*
-
-+ The <title> of the page
-+ Number of links on the page that the user can click on
-+ Number of unique domains that these links go to
-+ Whether the page was served in a secure manner
-+ Was Google Analytics available and working on the page?
-
-*/
-
-/*
-describe('Books', () => {
-    beforeEach((done) => {
-        Book.remove({}, (err) => { 
-           done();         
-        });     
-    });
-  describe('/GET book', () => {
-      it('it should GET all the books', (done) => {
-        chai.request(server)
-            .get('/book')
-            .end((err, res) => {
+            .post('/api/scrape')
+            .send(secureUrl)
+            .end(function (err, res) {
+                res.should.be.json;
+                expect(res.body.links).to.satisfy(Number.isInteger);
+                expect(res.body.domains).to.satisfy(Number.isInteger);
+                expect(res.body.secure).to.eql(true);
                 res.should.have.status(200);
-                res.body.should.be.a('array');
-                res.body.length.should.be.eql(0);
-              done();
+                done();
             });
-      });
-  });
-  /*
-  * Test the /POST route
-
- describe('/POST book', () => {
-    it('it should not POST a book without pages field', (done) => {
-      let book = {
-          title: "The Lord of the Rings",
-          author: "J.R.R. Tolkien",
-          year: 1954
-      }
-      chai.request(server)
-          .post('/book')
-          .send(book)
-          .end((err, res) => {
-              res.should.have.status(200);
-              res.body.should.be.a('object');
-              res.body.should.have.property('errors');
-              res.body.errors.should.have.property('pages');
-              res.body.errors.pages.should.have.property('kind').eql('required');
-            done();
-          });
     });
 
+    it('success but link is not secure (http)', function (done) {
+        chai.request(server)
+            .post('/api/scrape')
+            .send(unsecureUrl)
+            .end(function (err, res) {
+                res.should.be.json;
+                expect(res.body.links).to.satisfy(Number.isInteger);
+                expect(res.body.domains).to.satisfy(Number.isInteger);
+                expect(res.body.secure).to.eql(false);
+                res.should.have.status(200);
+                done();
+            });
+
+    });
+    it('should return message saying unformatted url', function (done) {
+        chai.request(server)
+            .post('/api/scrape')
+            .send(unformattedUrl)
+            .end(function (err, res) {
+                res.should.be.json;
+                expect(res.body.links).to.eql(unformattedLink);
+                expect(res.body.domains).to.eql(unformattedLink);
+                expect(res.body.secure).to.eql(unformattedLink);
+                res.should.have.status(400);
+                done();
+            });
+    });
+
+    it('should return message saying link leads nowhere', function (done) {
+        chai.request(server)
+            .post('/api/scrape')
+            .send(badUrl)
+            .end(function (err, res) {
+                res.should.be.json;
+                expect(res.body.links).to.eql(badLink);
+                expect(res.body.domains).to.eql(badLink);
+                expect(res.body.secure).to.eql(badLink);
+                res.should.have.status(404);
+                done();
+            });
+    });
 });
-}); */
+// =======================
+// title tests ===========
+// =======================*/
+describe('title', function () {
+    it('should display the page title', function (done) {
+        chai.request(server)
+            .post('/api/title')
+            .send(secureUrl)
+            .end(function (err, res) {
+                res.should.be.json;
+                expect(res.body.title).to.be.a('string');
+                res.should.have.status(200);
+                done();
+            });
+    });
+    it('should return message saying unformatted url', function (done) {
+        chai.request(server)
+            .post('/api/title')
+            .send(unformattedUrl)
+            .end(function (err, res) {
+                res.should.be.json;
+                expect(res.body.title).to.eql(unformattedLink);
+                res.should.have.status(400);
+                done();
+            });
+    });
+
+    it('should return message saying link leads nowhere', function (done) {
+        chai.request(server)
+            .post('/api/title')
+            .send(badUrl)
+            .end(function (err, res) {
+                res.should.be.json;
+                expect(res.body.title).to.eql(badLink);
+                res.should.have.status(404);
+                done();
+            });
+    });
+});
+// =======================
+// GA Tests  =============
+// =======================*/
+//uses gtmd to figure out whether a page has GA on it. Scrapes page header for a tag
+
+describe('google analytics', function () {
+    it('should return "true" (indicating it uses GA)', function (done) {
+        chai.request(server)
+            .post('/api/analytics')
+            .send(googleAnalyticsUrl)
+            .end(function (err, res) {
+                res.should.be.json;
+                expect(res.body.result).to.eql(true);
+                res.should.have.status(200);
+                done();
+            });
+    });
+    it('should return false (indicating it doesnt use GA)', function (done) {
+        chai.request(server)
+            .post('/api/analytics')
+            .send(secureUrl)
+            .end(function (err, res) {
+                res.should.be.json;
+                expect(res.body.result).to.eql(false);
+                res.should.have.status(200);
+                done();
+            });
+    });
+    it('should return message saying unformatted url', function (done) {
+        chai.request(server)
+            .post('/api/analytics')
+            .send(unformattedUrl)
+            .end(function (err, res) {
+                res.should.be.json;
+                expect(res.body.result).to.eql(unformattedLink);
+                res.should.have.status(400);
+                done();
+            });
+    });
+
+    it('should return message saying link leads nowhere', function (done) {
+        chai.request(server)
+            .post('/api/analytics')
+            .send(badUrl)
+            .end(function (err, res) {
+                res.should.be.json;
+                expect(res.body.result).to.eql(badLink);
+                res.should.have.status(404);
+                done();
+            });
+    });
+});

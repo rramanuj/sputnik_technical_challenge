@@ -21,7 +21,6 @@ app.use(cookieParser());
 // use morgan to log requests to the console
 app.use(morgan('dev'));
 
-
 // Add headers
 app.use(function (req, res, next) {
 
