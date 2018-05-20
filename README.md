@@ -3,7 +3,7 @@ Hey, welcome to Web-Scraper!
 
 To run this thing:
 1. npm install (to grab all the necessary libraries and packages)
-2. Ensure ports 8080 & 3000 are free (if you're running this on the same machine)
+2. Ensure ports 8080 & 3000 are free (if you're running the server & client on the same machine)
 3. npm start (to kick off the server)
 4. cd into client/web_scraper
 5. npm run dev (to start the client & the magic begins)
