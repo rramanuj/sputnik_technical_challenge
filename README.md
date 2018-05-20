@@ -6,7 +6,7 @@ To run this thing:
 2. Ensure ports 8080 & 3000 are free (if you're running the server & client on the same machine)
 3. npm start (to kick off the server)
 4. cd into client/web_scraper
-5. npm run dev (to start the client & the magic begins)
+5. npm run dev** (to start the client & the magic begins)
 
 
 localhost:8080 <-- Front End (if you want to throw requests conventionally)
